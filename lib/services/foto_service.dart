@@ -17,14 +17,22 @@ class FotoService {
     return _guardar(imagem, modalidade, turma);
   }
 
-  Future<Foto?> importar(String modalidade, {String? turma}) async {
-    final imagem = await _picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 100,
-    );
-    if (imagem == null) return null;
-    return _guardar(imagem, modalidade, turma);
+Future<List<Foto>> importar(String modalidade, {String? turma}) async {
+  final imagens = await _picker.pickMultiImage(
+    imageQuality: 100,
+  );
+
+  if (imagens.isEmpty) return [];
+
+  final fotosSalvas = <Foto>[];
+
+  for (final imagem in imagens) {
+    final foto = await _guardar(imagem, modalidade, turma);
+    fotosSalvas.add(foto);
   }
+
+  return fotosSalvas;
+}
 
   Future<Foto> _guardar(XFile imagem, String modalidade, String? turma) async {
     final agora = DateTime.now();

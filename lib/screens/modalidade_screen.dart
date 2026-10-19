@@ -37,26 +37,51 @@ class _ModalidadeScreenState extends State<ModalidadeScreen> {
     }
   }
 
-  Future<void> _adicionar(bool camera) async {
-    setState(() => _ocupado = true);
-    try {
-      final foto = camera
-          ? await _service.capturar(widget.modalidade)
-          : await _service.importar(widget.modalidade);
-      if (foto != null) {
-        await _carregar();
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Foto salva como ${foto.nomeArquivo}')),
+  
+Future<void> _adicionar(bool camera) async {
+  setState(() => _ocupado = true);
+
+  try {
+    final List<Foto> adicionadas;
+
+    if (camera) {
+      final foto = await _service.capturar(widget.modalidade);
+      adicionadas = foto == null ? <Foto>[] : <Foto>[foto];
+    } else {
+      adicionadas = await _service.importar(widget.modalidade);
+    }
+
+    if (adicionadas.isNotEmpty) {
+      await _carregar();
+
+      if (mounted) {
+        final mensagem = camera
+            ? 'Foto salva como ${adicionadas.first.nomeArquivo}'
+            : adicionadas.length == 1
+                ? '1 foto importada com sucesso.'
+                : '${adicionadas.length} fotos importadas com sucesso.';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(mensagem)),
         );
       }
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível adicionar a foto: ${e.toString().replaceFirst('Exception: ', '')}')),
-      );
-    } finally {
-      if (mounted) setState(() => _ocupado = false);
     }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível adicionar a foto: '
+            '${e.toString().replaceFirst('Exception: ', '')}',
+          ),
+        ),
+      );
+      await _carregar();
+    }
+  } finally {
+    if (mounted) setState(() => _ocupado = false);
   }
+}
 
   Future<void> _excluir(Foto foto) async {
     final confirmar = await showDialog<bool>(
